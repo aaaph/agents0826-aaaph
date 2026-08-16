@@ -1,0 +1,9 @@
+anthropic>=0.40.0
+python-dotenv>=1.0.0
+
+# векторний retriever + Ragas-порівняння (достатньо ANTHROPIC-ключа):
+sentence-transformers>=3.0
+ragas @ git+https://github.com/sanyaden/ragas.git@fix/optional-vertexai-imports-langchain-community-0.4
+datasets>=2.19
+langchain-anthropic>=1.5
+langchain-huggingface>=1.2
