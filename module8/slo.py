@@ -17,7 +17,7 @@ import pathlib
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parent
 RESPONSES = ROOT / "out" / "responses.json"
 HISTORY = ROOT / "out" / "eval_history.jsonl"
 
