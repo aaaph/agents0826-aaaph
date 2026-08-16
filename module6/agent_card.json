@@ -1,0 +1,27 @@
+{
+  "name": "TrackBot",
+  "description": "Агент поштового оператора: статуси відправлень, повернення вартості доставки, претензії. Українською.",
+  "url": "http://localhost:8080/a2a",
+  "version": "1.0.0",
+  "protocolVersion": "0.3.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false
+  },
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain"],
+  "skills": [
+    {
+      "id": "track-status",
+      "name": "Статус відправлення",
+      "description": "Поточний статус і останнє сканування за трек-номером.",
+      "examples": ["Де зараз посилка EE123456789UA?"]
+    },
+    {
+      "id": "refund",
+      "name": "Повернення вартості доставки",
+      "description": "Перевірка права на повернення за правилом 4.2 і оформлення претензії.",
+      "examples": ["Посилка не прийшла два тижні, поверніть гроші за доставку."]
+    }
+  ]
+}
