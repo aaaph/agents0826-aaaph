@@ -13,7 +13,7 @@
 Інтерфейс (retrieve / as_context) той самий — агент про заміну не дізнається.
 Наступний крок лаби — покласти ці ж вектори в Qdrant/Chroma.
 
-    python solutions/m2/knowledge_vec.py
+    python knowledge_vec.py
 """
 
 import math

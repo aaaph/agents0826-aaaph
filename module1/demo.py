@@ -1,8 +1,8 @@
 """
 М1 — три демо-сцени заняття «Основи агентів».
 
-    python solutions/m1/demo.py        # всі
-    python solutions/m1/demo.py 2 3    # вибрані
+    python demo.py        # всі
+    python demo.py 2 3    # вибрані
 """
 
 import sys

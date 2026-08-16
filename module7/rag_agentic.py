@@ -5,8 +5,8 @@ Static RAG (m02): правила підмішуються в промпт зав
 Agentic RAG: агент сам вирішує, КОЛИ і ЩО шукати, і може зробити
 кілька різних пошуків за один діалог.
 
-    python solutions/m2/rag_agentic.py                 # обидва варіанти поруч
-    python solutions/m2/rag_agentic.py --agentic-only
+    python rag_agentic.py                 # обидва варіанти поруч
+    python rag_agentic.py --agentic-only
 """
 
 import sys

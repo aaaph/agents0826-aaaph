@@ -6,8 +6,8 @@
   2) сесійна пам'ять: профіль клієнта живе між запитами в out/session.json —
      на другому зверненні агент вже знає трек-номер без перепитувань.
 
-    python solutions/m4/critic_memory.py
-    python solutions/m4/critic_memory.py --reset      # забути клієнта
+    python critic_memory.py
+    python critic_memory.py --reset      # забути клієнта
 """
 
 import json

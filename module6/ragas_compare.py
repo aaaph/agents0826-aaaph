@@ -4,7 +4,7 @@
 Один датасет (6 питань з еталонами), три конфігурації агента:
 
   lexical        — static RAG, лексичний retriever (domain/knowledge.py)
-  vector         — static RAG, ембединги (solutions/m2/knowledge_vec.py)
+  vector         — static RAG, ембединги (knowledge_vec.py)
   agentic-vector — retrieval як інструмент search_kb поверх векторного
 
 Кожна конфігурація проганяється через агента, Ragas міряє:
@@ -18,8 +18,8 @@
 Вартість/час: 6 питань × 3 конфігурації × (агент + 3 метрики) — кілька хвилин.
 
     pip install "ragas~=0.2" datasets "langchain-anthropic~=0.3" sentence-transformers
-    python solutions/m2/ragas_compare.py
-    python solutions/m2/ragas_compare.py lexical vector   # тільки вибрані
+    python ragas_compare.py
+    python ragas_compare.py lexical vector   # тільки вибрані
 """
 
 import sys
@@ -40,7 +40,7 @@ try:
     from langchain_huggingface import HuggingFaceEmbeddings
 except ImportError as e:
     raise SystemExit(f"Бракує пакета ({e.name}):\n"
-                     "  pip install -r solutions/requirements-optional.txt")
+                     "  pip install -r requirements.txt")
 
 from config import BASE_PROMPT, MODEL_FAST
 from core.agent import run_agent

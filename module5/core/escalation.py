@@ -54,7 +54,7 @@ def apply(result: dict, query: str, tracking: str = "—") -> dict:
 
     ticket = escalate_to_human(tracking, REASONS[reason])
     result["escalated"] = True
-    result["escalation"] = {"reason": reason, "explain": REASONS[reason], **ticket}
+    result["escalation"] = {**ticket, "reason": reason, "explain": REASONS[reason]}
     result["answer"] = (
         f"Передаю звернення оператору — {REASONS[reason]}.\n"
         f"Номер: {ticket['ticket']}. Орієнтовний час відповіді — "
