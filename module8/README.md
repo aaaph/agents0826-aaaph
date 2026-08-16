@@ -25,9 +25,19 @@ python run.py                  # всі 9 шарів
 uvicorn api:app --port 8000
 curl -s localhost:8000/ask -X POST -H 'content-type: application/json' \
      -d '{"query": "Посилка EE123456789UA не прийшла два тижні. Поверніть гроші."}'
-docker build -t agentpro-m8 . && docker run -p 8000:8000 -e ANTHROPIC_API_KEY=... agentpro-m8
 python slo.py                  # офлайн, після run.py + eval_history
 ```
+
+**Опційно — контейнер** (для шляху B воркшопу: Cloud Run / GKE; шлях A
+через AgentCore і managed runtime обходяться без Docker):
+
+```bash
+docker build -t agentpro-m8 . && docker run -p 8000:8000 -e ANTHROPIC_API_KEY=... agentpro-m8
+```
+
+Зверніть увагу: ключа в образі немає — тільки через `-e` у runtime
+(у проді — Secret Manager). І чекпоінт у контейнері вмирає з рестартом —
+живий аргумент за «стан поза процесом».
 
 ## Продакшн-нотатки
 
