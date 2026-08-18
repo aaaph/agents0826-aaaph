@@ -1,0 +1,85 @@
+name: "М1 · Практичне завдання: свій агент з інструментами"
+description: "Взяти завдання модуля 1 у роботу і показати результат"
+title: "М1 · "
+labels: ["module1", "у роботі"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Завдання для розвитку.** Заліків і оцінок немає — робите для себе.
+        Один робочий агент за курс дає право на сертифікат.
+
+        У заголовку після «М1 ·» напишіть своє **Прізвище Ім'я** — так вас знайдуть серед інших.
+
+        Умови й підказки: [module1/README.md](../blob/main/module1/README.md)
+
+  - type: input
+    id: repo
+    attributes:
+      label: Посилання на репозиторій
+      description: "Публічний репо з вашим агентом. Не забудьте додати `sanyaden` співавтором: Settings → Collaborators."
+      placeholder: https://github.com/username/my-agent
+    validations:
+      required: false
+
+  - type: dropdown
+    id: level
+    attributes:
+      label: Рівень, який робите
+      options:
+        - "Рівень 1 — базовий"
+        - "Рівень 2 — досвідчений"
+        - "Рівень 3 — максимум"
+    validations:
+      required: true
+
+  - type: input
+    id: api
+    attributes:
+      label: Який API взяли за інструмент
+      placeholder: "погода Open-Meteo / курс НБУ / GitHub API / робочий REST"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: level1
+    attributes:
+      label: "Рівень 1 — базовий"
+      options:
+        - label: "Агент із системним промптом і 1+ власним інструментом до реального API"
+        - label: "Робочий цикл: запит → виклик інструмента → відповідь на основі результату"
+        - label: "Ключ тільки з .env, у git його немає (перевірено .gitignore)"
+        - label: "Оброблений хоча б один нещасливий шлях: помилка інструмента, ліміт кроків або збій API"
+        - label: "README: що робить агент, як запустити, приклад діалогу"
+
+  - type: checkboxes
+    id: level2
+    attributes:
+      label: "Рівень 2 — досвідчений (за бажанням)"
+      options:
+        - label: "2–3 інструменти, між якими агент реально обирає"
+        - label: "Оброблені всі п'ять станів: ok · tool_error · turns_exhausted · api_error · no_tool_used"
+        - label: "Ліміт кроків MAX_TURNS + визначено, що робити при його вичерпанні"
+        - label: "Логування кожного виклику інструмента: що передали, що отримали"
+        - label: "Свій кейс «питання-пастка»: запит поза можливостями агента"
+
+  - type: checkboxes
+    id: level3
+    attributes:
+      label: "Рівень 3 — максимум (за бажанням)"
+      options:
+        - label: "Ескалація на людину з причиною і номером звернення"
+        - label: "Підрахунок вартості прогону в токенах і доларах"
+        - label: "Ретраї з експоненційним backoff на 429/500/529"
+        - label: "3–5 тестових запитів у README з реальними відповідями (happy + unhappy paths)"
+
+  - type: textarea
+    id: result
+    attributes:
+      label: Що зробив і що виявилось найскладнішим
+      description: "Заповніть, коли покажете роботу. Можна одразу, можна пізніше — коментарем."
+      placeholder: |
+        Агент для трекінгу посилок Нової пошти, 2 інструменти.
+        Найскладніше — змусити його не вигадувати статус, коли API повертає порожньо.
+    validations:
+      required: false
