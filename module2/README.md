@@ -12,6 +12,8 @@
   (локальна multilingual-e5-small або OpenAI — обирається сам).
 - `knowledge_qdrant.py` — той самий retriever у векторній БД: payload,
   фільтри по метаданих, `score_threshold` замість повного перебору.
+- `self_rag.py` — ворота перед відповіддю (Self-RAG / CRAG): поріг →
+  LLM-grade → переформулювання → ескалація, якщо правила таки немає.
 - `rag_agentic.py` — retrieval як інструмент `search_kb`: агент сам
   вирішує, коли і що шукати.
 - `ragas_compare.py` — агент з 3 RAG-конфігураціями (lexical / vector /
@@ -24,6 +26,7 @@ pip install -r requirements.txt
 python run.py 1 2              # порівняти відповіді М1 і М2 поруч
 python knowledge_vec.py        # де ламається лексика (частина 1 — офлайн)
 python knowledge_qdrant.py     # те саме у векторній БД (без Docker, :memory:)
+python self_rag.py             # ворота: grade → rewrite → ескалація
 python rag_agentic.py          # static проти agentic
 python ragas_compare.py        # 3 конфігурації під Ragas (~хвилини)
 ```
