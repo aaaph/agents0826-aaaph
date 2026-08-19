@@ -9,6 +9,7 @@ ORDERS = {
     # прострочене — класичний кейс повернення вартості доставки
     "EE123456789UA": {
         "tracking": "EE123456789UA",
+        "recipient_phone": "+380671112233",
         "status": "В дорозі",
         "last_scan": "12.07.2026, сортувальний центр Київ",
         "days_in_transit": 15,
@@ -21,6 +22,7 @@ ORDERS = {
     # втрачене — повернення доставки + компенсація вкладення
     "EE222333444UA": {
         "tracking": "EE222333444UA",
+        "recipient_phone": "+380502223344",
         "status": "Розшук",
         "last_scan": "02.06.2026, митний пост Одеса",
         "days_in_transit": 55,
@@ -33,6 +35,7 @@ ORDERS = {
     # вручене вчасно — повернення не належить
     "EE555666777UA": {
         "tracking": "EE555666777UA",
+        "recipient_phone": "+380633334455",
         "status": "Вручено",
         "last_scan": "10.08.2026, відділення №7 Харків",
         "days_in_transit": 4,
@@ -45,6 +48,7 @@ ORDERS = {
     # невірна адреса — провина відправника, повернення не належить
     "EE888999000UA": {
         "tracking": "EE888999000UA",
+        "recipient_phone": "+380934445566",
         "status": "Повернення відправнику",
         "last_scan": "08.08.2026, відділення №3 Полтава",
         "days_in_transit": 12,
@@ -58,6 +62,7 @@ ORDERS = {
     # у межах строку — ще рано щось вимагати
     "EE111222333UA": {
         "tracking": "EE111222333UA",
+        "recipient_phone": "+380502223344",
         "status": "В дорозі",
         "last_scan": "15.08.2026, сортувальний центр Львів",
         "days_in_transit": 3,
@@ -73,6 +78,38 @@ _claims = {}
 
 
 # ── інструменти ───────────────────────────────────────────────
+def _digits(phone: str | int) -> str:
+    """Last 9 digits of the phone number."""
+    return "".join(c for c in str(phone) if c.isdigit())[-9:]
+
+
+def find_shipments(phone: str) -> dict:
+    """Find user's shipments by phone number."""
+    key = _digits(phone)
+    if len(key) < 9:
+        return {
+            "error": "bad_phone",
+            "phone": phone,
+            "hint": "Потрібен номер із 9 цифр після коду країни, напр. +380671112233.",
+        }
+    found = [
+        {
+            "tracking": o["tracking"],
+            "service": o["service"],
+            "recipient_city": o["recipient_city"],
+        }
+        for o in ORDERS.values()
+        if _digits(o.get("recipient_phone", "")) == key
+    ]
+    if not found:
+        return {
+            "error": "not_found",
+            "phone": phone,
+            "hint": "За цим номером відправлень немає. Перевірте номер або спитайте відправника.",
+        }
+    return {"count": len(found), "shipments": found}
+
+
 def get_order_status(tracking: str) -> dict:
     o = ORDERS.get(tracking.strip().upper())
     if not o:
@@ -176,6 +213,7 @@ def escalate_to_human(tracking: str, reason: str) -> dict:
 
 
 IMPL = {
+    "find_shipments": find_shipments,
     "get_order_status": get_order_status,
     "check_refund_eligibility": check_refund_eligibility,
     "check_compensation": check_compensation,
@@ -207,7 +245,25 @@ _TRACK = {
     "tracking": {"type": "string", "description": "Трек-номер, напр. EE123456789UA"}
 }
 
+_PHONE = {
+    "phone": {
+        "type": "string",
+        "description": "Телефон отримувача як його надав клієнт, "
+        "напр. +380671112233 або 0671112233. Передавай як є, "
+        "формат нормалізує бекенд.",
+    }
+}
+
 TOOL_SCHEMAS = {
+    "find_shipments": _schema(
+        "find_shipments",
+        "Знаходить відправлення за номером телефону отримувача. "
+        "Повертає ЛИШЕ трек-номери, без статусу. "
+        "Щоб дізнатись стан відправлення, виклич далі get_order_status "
+        "з трек-номером, отриманим тут.",
+        _PHONE,
+        ["phone"],
+    ),
     "get_order_status": _schema(
         "get_order_status",
         "Повертає статус відправлення за трек-номером.",
@@ -241,8 +297,9 @@ TOOL_SCHEMAS = {
     ),
 }
 
-BASIC = ["get_order_status"]
+BASIC = ["find_shipments", "get_order_status"]
 FULL = [
+    "find_shipments",
     "get_order_status",
     "check_refund_eligibility",
     "check_compensation",
@@ -250,7 +307,7 @@ FULL = [
     "escalate_to_human",
 ]
 
-READ = ["get_order_status", "check_refund_eligibility"]
+READ = ["find_shipments", "get_order_status", "check_refund_eligibility"]
 
 # 1–2: тільки подивитись · 3: дізнатись право (фреймворк, ще без дій)
 # 4+: право діяти — з оркестрації з'являється create_claim
