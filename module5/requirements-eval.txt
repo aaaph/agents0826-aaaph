@@ -1,0 +1,6 @@
+# Важкий стек лише для ragas_compare.py — ставте окремо:
+#   pip install -r requirements-eval.txt
+ragas @ git+https://github.com/sanyaden/ragas.git@fix/optional-vertexai-imports-langchain-community-0.4
+datasets>=2.19
+langchain-anthropic>=1.5
+langchain-huggingface>=1.2

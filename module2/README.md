@@ -22,12 +22,14 @@
 ## Запуск
 
 ```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python run.py 1 2              # порівняти відповіді М1 і М2 поруч
 python knowledge_vec.py        # де ламається лексика (частина 1 — офлайн)
 python knowledge_qdrant.py     # те саме у векторній БД (без Docker, :memory:)
 python self_rag.py             # ворота: grade → rewrite → ескалація
 python rag_agentic.py          # static проти agentic
+pip install -r requirements-eval.txt   # важкий стек, лише для наступної команди
 python ragas_compare.py        # 3 конфігурації під Ragas (~хвилини)
 ```
 
