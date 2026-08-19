@@ -12,10 +12,10 @@
 import argparse
 import json
 
-from config import USER_QUERY, OUT_DIR
-from modules import MODULES
-from core.agent import USAGE, reset_usage
+from config import OUT_DIR, USER_QUERY
 from core import cost
+from core.agent import USAGE, reset_usage
+from modules import MODULES
 
 RESULTS = OUT_DIR / "responses.json"
 
@@ -41,14 +41,22 @@ def summarize(result: dict) -> list:
         bits.append(f"ЕСКАЛАЦІЯ: {e['explain']} → {e['ticket']}")
     if v := result.get("failures"):
         bits.append(f"збоїв інструментів: {len(v)}")
-    if v := result.get("routed_to"):        bits.append(f"маршрут: {v}")
-    if v := result.get("registry"):         bits.append(f"MCP-сервери: {len(v)}")
-    if v := result.get("checkpoint"):       bits.append(f"чекпоінт: {v['state']}")
-    if v := result.get("tracing"):          bits.append(f"спанів: {v['spans']}")
-    if v := result.get("guardrail"):        bits.append(f"guardrail: {v.get('verdict')}")
-    if v := result.get("score"):            bits.append(f"eval: {v}")
-    if v := result.get("gate"):             bits.append(f"гейт: {v}")
-    if v := result.get("ttft_sec"):         bits.append(f"перший токен: {v}с")
+    if v := result.get("routed_to"):
+        bits.append(f"маршрут: {v}")
+    if v := result.get("registry"):
+        bits.append(f"MCP-сервери: {len(v)}")
+    if v := result.get("checkpoint"):
+        bits.append(f"чекпоінт: {v['state']}")
+    if v := result.get("tracing"):
+        bits.append(f"спанів: {v['spans']}")
+    if v := result.get("guardrail"):
+        bits.append(f"guardrail: {v.get('verdict')}")
+    if v := result.get("score"):
+        bits.append(f"eval: {v}")
+    if v := result.get("gate"):
+        bits.append(f"гейт: {v}")
+    if v := result.get("ttft_sec"):
+        bits.append(f"перший токен: {v}с")
     if v := result.get("usage", {}).get("output_tokens"):
         bits.append(f"токенів: {v}")
     return bits
@@ -56,7 +64,9 @@ def summarize(result: dict) -> list:
 
 def main():
     ap = argparse.ArgumentParser(description="Наскрізний кейс AI Agents PRO")
-    ap.add_argument("modules", nargs="*", type=int, help="номери модулів (порожньо = всі)")
+    ap.add_argument(
+        "modules", nargs="*", type=int, help="номери модулів (порожньо = всі)"
+    )
     ap.add_argument("--list", action="store_true", help="показати список модулів")
     ap.add_argument("--query", default=USER_QUERY, help="інший запит користувача")
     args = ap.parse_args()
@@ -82,12 +92,20 @@ def main():
         reset_usage()
         try:
             result = mod.run(args.query)
-            result.update(module=n, title=mod.TITLE, adds=mod.ADDS, query=args.query,
-                          cost={"usd": cost.usd(USAGE["by_model"]),
-                                "calls": USAGE["calls"],
-                                "in": USAGE["in"], "out": USAGE["out"],
-                                "by_model": cost.breakdown(USAGE["by_model"]),
-                                **cost.savings_vs_single_model(USAGE["by_model"])})
+            result.update(
+                module=n,
+                title=mod.TITLE,
+                adds=mod.ADDS,
+                query=args.query,
+                cost={
+                    "usd": cost.usd(USAGE["by_model"]),  # ty: ignore[invalid-argument-type]
+                    "calls": USAGE["calls"],
+                    "in": USAGE["in"],
+                    "out": USAGE["out"],
+                    "by_model": cost.breakdown(USAGE["by_model"]),  # ty: ignore[invalid-argument-type]
+                    **cost.savings_vs_single_model(USAGE["by_model"]),  # ty: ignore[invalid-argument-type]
+                },
+            )
             stored[str(n)] = result
 
             preview = result["answer"].replace("\n", " ")
@@ -95,15 +113,21 @@ def main():
             for bit in summarize(result):
                 print(f"      {bit}")
             c = result["cost"]
-            print(f"      вартість: ${c['usd']:.5f} за {c['calls']} викликів "
-                  f"({c['in']}→{c['out']} токенів)")
+            print(
+                f"      вартість: ${c['usd']:.5f} за {c['calls']} викликів "
+                f"({c['in']}→{c['out']} токенів)"
+            )
             if c.get("saved_pct"):
-                print(f"      каскад моделей заощадив {c['saved_pct']}% "
-                      f"(без нього ${c['single_model_usd']:.5f})")
-        except Exception as e:
+                print(
+                    f"      каскад моделей заощадив {c['saved_pct']}% "
+                    f"(без нього ${c['single_model_usd']:.5f})"
+                )
+        except Exception as e:  # noqa: BLE001
             print(f"    ✗ {type(e).__name__}: {e}")
 
-        RESULTS.write_text(json.dumps(stored, ensure_ascii=False, indent=2), encoding="utf-8")
+        RESULTS.write_text(
+            json.dumps(stored, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     print("\n" + "─" * 70)
     print(f"Збережено: {RESULTS}")

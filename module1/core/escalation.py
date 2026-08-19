@@ -11,10 +11,10 @@ from domain.backend import escalate_to_human
 REASONS = {
     "guardrail_block": "відповідь не пройшла перевірку безпеки",
     "turns_exhausted": "агент не вклався у ліміт кроків",
-    "api_error":       "збій сервісу моделі",
-    "tool_error":      "інструмент повернув помилку",
-    "user_asked":      "клієнт попросив оператора",
-    "no_tool_used":    "агент відповів без звернення до бекенду",
+    "api_error": "збій сервісу моделі",
+    "tool_error": "інструмент повернув помилку",
+    "user_asked": "клієнт попросив оператора",
+    "no_tool_used": "агент відповів без звернення до бекенду",
 }
 
 _ASK_HUMAN = ("оператор", "людин", "менеджер", "консультант", "зателефон", "подзвон")
@@ -31,12 +31,17 @@ def decide(result: dict, query: str = "") -> str | None:
         return "user_asked"
     if result.get("outcome") == "api_error":
         return "api_error"
-    if ESCALATE_ON.get("turns_exhausted") and result.get("outcome") == "turns_exhausted":
+    if (
+        ESCALATE_ON.get("turns_exhausted")
+        and result.get("outcome") == "turns_exhausted"
+    ):
         return "turns_exhausted"
-    if ESCALATE_ON.get("guardrail_block") and \
-            result.get("guardrail", {}).get("verdict") == "block":
+    if (
+        ESCALATE_ON.get("guardrail_block")
+        and result.get("guardrail", {}).get("verdict") == "block"
+    ):
         return "guardrail_block"
-    if ESCALATE_ON.get("tool_error") and result.get("failures"):
+    if ESCALATE_ON.get("tool_error") and result.get("failures"):  # noqa: SIM102
         # ескалюємо лише якщо агент так і не отримав жодної успішної відповіді
         if all(s.get("failed") for s in result.get("trace", [])):
             return "tool_error"

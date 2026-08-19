@@ -5,12 +5,12 @@
 Агент уміє подивитись статус, але не має права нічого зробити.
 """
 
+from config import BASE_PROMPT
 from core.agent import run_agent
 from domain.backend import tools_for
-from config import BASE_PROMPT
 
 TITLE = "Ядро агента"
-ADDS  = "цикл «міркуй → дій → спостерігай» + один інструмент"
+ADDS = "цикл «міркуй → дій → спостерігай» + один інструмент"
 FILES = ["core/agent.py", "domain/backend.py"]
 
 

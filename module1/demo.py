@@ -5,8 +5,8 @@
     python demo.py 2 3    # вибрані
 """
 
-import sys
 import pathlib
+import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -21,8 +21,10 @@ def show(result: dict, query: str):
     tools = [t["tool"] for t in result.get("trace", [])]
     print(f"  запит:       «{query}»")
     print(f"  інструменти: {' → '.join(tools) if tools else 'не викликались'}")
-    print(f"  outcome:     {result.get('outcome')}"
-          + ("  (no_tool_used!)" if result.get("no_tool_used") else ""))
+    print(
+        f"  outcome:     {result.get('outcome')}"
+        + ("  (no_tool_used!)" if result.get("no_tool_used") else "")
+    )
     reason = escalation.decide(result, query)
     print(f"  ескалація:   {escalation.REASONS[reason] if reason else 'не потрібна'}")
     print(f"  відповідь:   {result['answer'][:300]}")
@@ -44,7 +46,8 @@ def scene_2():
 def scene_3():
     print("── Сцена 3. Зрив ліміту кроків ────────────────────────────────")
     print("   MAX_TURNS=1: агент не встигає завершити → turns_exhausted → оператор.\n")
-    import core.agent as agent
+    from core import agent
+
     saved = agent.MAX_TURNS
     agent.MAX_TURNS = 1
     try:
