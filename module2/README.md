@@ -12,6 +12,10 @@
   (локальна multilingual-e5-small або OpenAI — обирається сам).
 - `rag_agentic.py` — retrieval як інструмент `search_kb`: агент сам
   вирішує, коли і що шукати.
+- `knowledge_qdrant.py` — той самий retriever у векторній БД: payload,
+  фільтри по метаданих, `score_threshold` замість повного перебору.
+- `rag_agentic.py` — retrieval як інструмент `search_kb`: агент сам
+  вирішує, коли і що шукати.
 - `ragas_compare.py` — агент з 3 RAG-конфігураціями (lexical / vector /
   agentic) під метриками Ragas; головна — context_recall.
 
@@ -21,9 +25,26 @@
 pip install -r requirements.txt
 python run.py 1 2              # порівняти відповіді М1 і М2 поруч
 python knowledge_vec.py        # де ламається лексика (частина 1 — офлайн)
+python knowledge_qdrant.py     # те саме у векторній БД (без Docker, :memory:)
 python rag_agentic.py          # static проти agentic
 python ragas_compare.py        # 3 конфігурації під Ragas (~хвилини)
 ```
+
+## Qdrant: сховище змінилось, агент — ні
+
+```bash
+python knowledge_qdrant.py            # вбудований режим, нуль інфраструктури
+python knowledge_qdrant.py --filter   # пошук лише серед правил про компенсацію
+
+docker run -p 6333:6333 qdrant/qdrant                       # справжній сервер
+QDRANT_URL=http://localhost:6333 python knowledge_qdrant.py
+```
+
+Контракт `retrieve()` / `as_context()` той самий — **агент про заміну
+сховища не дізнається**. Що зʼявляється порівняно зі списком у памʼяті:
+окреме сховище (індекс переживає рестарт), payload з метаданими поруч із
+вектором, фільтри + ANN-пошук, і `score_threshold` — той самий fail-closed,
+але вже на рівні БД.
 
 ## Нюанси заняття
 
