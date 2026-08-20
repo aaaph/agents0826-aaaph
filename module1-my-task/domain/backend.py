@@ -429,12 +429,13 @@ def request_rerun(run_id: str, reason: str) -> dict:
 
 
 def escalate_to_human(ref: str, reason: str) -> dict:
-    """Передати питання інженеру."""
+    """Передати питання черговому інженеру. Контракт полів — core/escalation.py."""
     return {
         "escalated": True,
-        "ticket": f"ENG-{abs(hash(ref)) % 10000:04d}",
+        "ticket": f"ENG-{sum(map(ord, ref)) % 10000:04d}",
         "ref": ref,
         "reason": reason,
+        "eta_minutes": 30,
     }
 
 

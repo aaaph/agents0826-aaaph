@@ -1,0 +1,74 @@
+[  0.000] [INFO ] system: ORB-SLAM3 stereo, commit a3f9c21
+[  0.000] [INFO ] run: run-0146  dataset: EuRoC MAV  sequence: V2_03_difficult
+[  0.480] [INFO ] imu: disabled (stereo-only config)
+[  0.512] [INFO ] track: initialized on 2 keyframes
+[  0.000] [TRACK] frame    0  feats 123  inliers 111  kf 2
+[  1.000] [TRACK] frame    1  feats 114  inliers  95  kf 2
+[  2.000] [TRACK] frame    2  feats 111  inliers  94  kf 2
+[  3.000] [TRACK] frame    3  feats 105  inliers  96  kf 2
+[  4.000] [TRACK] frame    4  feats 112  inliers 100  kf 2
+[  5.000] [TRACK] frame    5  feats 102  inliers  86  kf 2
+[  6.000] [TRACK] frame    6  feats 104  inliers  86  kf 2
+[  7.000] [INFO ] map: keyframe 3 inserted
+[  7.000] [TRACK] frame    7  feats 120  inliers 109  kf 3
+[  8.000] [TRACK] frame    8  feats 110  inliers  95  kf 3
+[  9.000] [TRACK] frame    9  feats 115  inliers  98  kf 3
+[ 10.000] [TRACK] frame   10  feats 101  inliers  90  kf 3
+[ 11.000] [TRACK] frame   11  feats 121  inliers 110  kf 3
+[ 12.000] [TRACK] frame   12  feats 135  inliers 118  kf 3
+[ 13.000] [TRACK] frame   13  feats 109  inliers  95  kf 3
+[ 14.000] [INFO ] map: keyframe 4 inserted
+[ 14.000] [TRACK] frame   14  feats 107  inliers  92  kf 4
+[ 15.000] [TRACK] frame   15  feats 130  inliers 107  kf 4
+[ 16.000] [TRACK] frame   16  feats 111  inliers  98  kf 4
+[ 17.000] [TRACK] frame   17  feats 133  inliers 116  kf 4
+[ 18.000] [TRACK] frame   18  feats 134  inliers 125  kf 4
+[ 19.000] [TRACK] frame   19  feats 128  inliers 106  kf 4
+[ 20.000] [TRACK] frame   20  feats 132  inliers 114  kf 4
+[ 21.000] [INFO ] map: keyframe 5 inserted
+[ 21.000] [TRACK] frame   21  feats 108  inliers 100  kf 5
+[ 22.000] [TRACK] frame   22  feats 135  inliers 118  kf 5
+[ 23.000] [TRACK] frame   23  feats 119  inliers 102  kf 5
+[ 24.000] [TRACK] frame   24  feats 102  inliers  95  kf 5
+[ 25.000] [TRACK] frame   25  feats 117  inliers 108  kf 5
+[ 26.000] [TRACK] frame   26  feats 104  inliers  97  kf 5
+[ 27.000] [TRACK] frame   27  feats 114  inliers  94  kf 5
+[ 28.000] [INFO ] map: keyframe 6 inserted
+[ 28.000] [TRACK] frame   28  feats 135  inliers 117  kf 6
+[ 29.000] [TRACK] frame   29  feats 103  inliers  93  kf 6
+[ 30.000] [TRACK] frame   30  feats 134  inliers 115  kf 6
+[ 31.000] [TRACK] frame   31  feats  89  inliers  79  kf 6
+[ 32.000] [TRACK] frame   32  feats  90  inliers  77  kf 6
+[ 33.000] [TRACK] frame   33  feats 114  inliers 101  kf 6
+[ 34.000] [TRACK] frame   34  feats  98  inliers  83  kf 6
+[ 35.000] [INFO ] map: keyframe 7 inserted
+[ 35.000] [TRACK] frame   35  feats  95  inliers  87  kf 7
+[ 36.000] [TRACK] frame   36  feats 120  inliers  99  kf 7
+[ 37.000] [TRACK] frame   37  feats 106  inliers  97  kf 7
+[ 38.000] [TRACK] frame   38  feats 119  inliers 100  kf 7
+[ 39.000] [TRACK] frame   39  feats 120  inliers 107  kf 7
+[ 40.000] [TRACK] frame   40  feats 117  inliers 107  kf 7
+[ 41.000] [TRACK] frame   41  feats 106  inliers  90  kf 7
+[ 42.000] [INFO ] map: keyframe 8 inserted
+[ 42.000] [TRACK] frame   42  feats  96  inliers  85  kf 8
+[ 43.000] [TRACK] frame   43  feats 109  inliers  95  kf 8
+[ 44.000] [TRACK] frame   44  feats 105  inliers  93  kf 8
+[ 45.000] [TRACK] frame   45  feats 108  inliers  94  kf 8
+[ 46.000] [TRACK] frame   46  feats  91  inliers  83  kf 8
+[ 47.000] [TRACK] frame   47  feats 104  inliers  94  kf 8
+[ 48.000] [TRACK] frame   48  feats 114  inliers  94  kf 8
+[ 49.000] [INFO ] map: keyframe 9 inserted
+[ 49.000] [TRACK] frame   49  feats 111  inliers 103  kf 9
+[ 50.000] [TRACK] frame   50  feats 122  inliers 104  kf 9
+[ 51.000] [TRACK] frame   51  feats  98  inliers  89  kf 9
+[ 52.000] [TRACK] frame   52  feats 106  inliers  99  kf 9
+[ 53.000] [TRACK] frame   53  feats  94  inliers  87  kf 9
+[ 54.000] [TRACK] frame   54  feats 113  inliers  94  kf 9
+[ 55.000] [TRACK] frame   55  feats 119  inliers 110  kf 9
+[ 56.000] [INFO ] map: keyframe 10 inserted
+[ 56.000] [TRACK] frame   56  feats 121  inliers 105  kf 10
+[ 57.000] [TRACK] frame   57  feats 112  inliers 100  kf 10
+[ 58.000] [TRACK] frame   58  feats  95  inliers  84  kf 10
+[ 59.000] [TRACK] frame   59  feats 109  inliers  91  kf 10
+[ 60.000] [TRACK] frame   60  feats  99  inliers  81  kf 10
+[ 60.000] [INFO ] eval: sequence finished, 10 keyframes
