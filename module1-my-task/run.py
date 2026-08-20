@@ -98,12 +98,12 @@ def main():
                 adds=mod.ADDS,
                 query=args.query,
                 cost={
-                    "usd": cost.usd(USAGE["by_model"]),  # ty: ignore[invalid-argument-type]
+                    "usd": cost.usd(USAGE["by_model"]),
                     "calls": USAGE["calls"],
                     "in": USAGE["in"],
                     "out": USAGE["out"],
-                    "by_model": cost.breakdown(USAGE["by_model"]),  # ty: ignore[invalid-argument-type]
-                    **cost.savings_vs_single_model(USAGE["by_model"]),  # ty: ignore[invalid-argument-type]
+                    "by_model": cost.breakdown(USAGE["by_model"]),
+                    **cost.savings_vs_single_model(USAGE["by_model"]),
                 },
             )
             stored[str(n)] = result

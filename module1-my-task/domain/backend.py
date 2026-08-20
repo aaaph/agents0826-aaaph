@@ -8,6 +8,7 @@ run_id навмисно непрозорий: сконструювати йог�
 його можна тільки отримати від search_logs або find_runs.
 """
 
+import difflib
 import pathlib
 import re
 
@@ -192,6 +193,7 @@ _TRACK_RE = re.compile(
 
 _EVENTS = {
     "tracking_lost": "track: LOST",
+    "relocalization": "relocalization",
     "low_features": "low feature count",
     "loop_closure": "loop: closure",
     "keyframe": "keyframe",
@@ -290,12 +292,21 @@ def find_runs(algorithm: str, dataset: str = "", sequence: str = "") -> dict:
         and (not seq or _norm(r["sequence"]) == seq)
     ]
     if not found:
+        # Порожній результат пошуку — це НЕ збій інструмента: критерії коректні,
+        # просто нічого не підійшло. Повертаємо count: 0 і те, що є поруч, щоб
+        # агент міг перепитати сам, а не ескалювати на живого інженера.
+        known = {k: sorted({r[k] for r in RUNS.values()}) for k in ("algorithm", "dataset", "sequence")}
+        near = difflib.get_close_matches(sequence, known["sequence"], n=3, cutoff=0.6) \
+            or difflib.get_close_matches(algorithm, known["algorithm"], n=3, cutoff=0.6)
         return {
-            "error": "not_found",
-            "algorithm": algorithm,
-            "dataset": dataset or None,
-            "sequence": sequence or None,
-            "hint": "Прогонів за такими критеріями немає.",
+            "count": 0,
+            "runs": [],
+            "criteria": {"algorithm": algorithm, "dataset": dataset or None,
+                         "sequence": sequence or None},
+            "available": known,
+            "did_you_mean": near or None,
+            "hint": "За такими критеріями виконань немає. Звірте назву зі списком "
+                    "available і перепитайте — інженера турбувати не потрібно.",
         }
     return {"count": len(found), "runs": found}
 
@@ -482,11 +493,16 @@ TOOL_SCHEMAS = {
         "РІВЕНЬ 1 каскаду — сирі події. Шукає подію в логах усіх виконань і повертає, "
         "де вона трапилась: run_id, сиквенс, скільки разів, на якій секунді вперше. "
         "Метаданих і метрик НЕ повертає — по них далі get_run і get_metrics. "
-        "Використовуй, коли питання починається з події («де зривався трекінг?»).",
+        "Використовуй, коли питання починається з події («де зривався трекінг?»). "
+        "Якщо потрібної події немає серед доступних — не підміняй її схожою, "
+        "а скажи користувачеві, які події є.",
         {
             "event": {
                 "type": "string",
-                "description": "tracking_lost, low_features, loop_closure або keyframe",
+                "description": "Одне зі значень: tracking_lost (зрив трекінгу), "
+                "relocalization (спроба релокалізації), low_features (мало фіч), "
+                "loop_closure (замикання циклу), keyframe (додано кейфрейм). "
+                "Це різні події: відповідь про одну не є відповіддю про іншу.",
             },
             "algorithm": {
                 "type": "string",
@@ -548,11 +564,15 @@ TOOL_SCHEMAS = {
             "run_id": _RUN_ID,
             "frame_from": {
                 "type": "integer",
-                "description": "Початок діапазону кадрів. -1 або пропуск — від початку",
+                "description": "Початок діапазону кадрів. У цих логах індекс кадру "
+                "дорівнює секунді від старту (один TRACK-рядок на секунду), тож час "
+                "переводиться в кадри один в один: «перші 10 секунд» = "
+                "frame_from 0, frame_to 10. -1 або пропуск — від початку лога.",
             },
             "frame_to": {
                 "type": "integer",
-                "description": "Кінець діапазону кадрів. -1 або пропуск — до кінця",
+                "description": "Кінець діапазону кадрів, у тій самій шкалі "
+                "(кадр = секунда). -1 або пропуск — до кінця лога.",
             },
         },
         ["run_id"],

@@ -15,6 +15,7 @@ REASONS = {
     "tool_error": "інструмент повернув помилку",
     "user_asked": "клієнт попросив оператора",
     "no_tool_used": "агент відповів без звернення до бекенду",
+    "budget_exceeded": "прогін вичерпав ліміт вартості",
 }
 
 _ASK_HUMAN = ("оператор", "людин", "менеджер", "консультант", "зателефон", "подзвон")
@@ -29,6 +30,8 @@ def decide(result: dict, query: str = "") -> str | None:
     """Повертає причину ескалації або None, якщо агент упорався сам."""
     if ESCALATE_ON.get("user_asked") and user_asked_for_human(query):
         return "user_asked"
+    if result.get("outcome") == "budget_exceeded":
+        return "budget_exceeded"
     if result.get("outcome") == "api_error":
         return "api_error"
     if (

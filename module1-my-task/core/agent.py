@@ -3,7 +3,7 @@
 
 Цей файл не змінюється від модуля до модуля — змінюється те, ЩО в нього передають.
 Окрім щасливого шляху, тут явно обробляються чотири види збоїв:
-  api_error · tool_error · turns_exhausted · no_tool_used
+  api_error · tool_error · turns_exhausted · no_tool_used · budget_exceeded
 """
 
 import json
@@ -11,19 +11,20 @@ import time
 
 from anthropic import Anthropic, APIError, APIStatusError
 
-from config import API_KEY, MAX_TOKENS, MAX_TURNS, MODEL, MODEL_FAST
+from config import API_KEY, MAX_TOKENS, MAX_TURNS, MAX_USD, MODEL, MODEL_FAST
+from core import cost
 
 client = Anthropic(api_key=API_KEY)
 
 # накопичувач вартості прогону
-USAGE = {"calls": 0, "in": 0, "out": 0, "by_model": {}}
+USAGE: dict = {"calls": 0, "in": 0, "out": 0, "by_model": {}}
 
 
 def _track(model, usage):
-    USAGE["calls"] += 1  # ty: ignore[unsupported-operator]
+    USAGE["calls"] += 1
     USAGE["in"] += usage.input_tokens
     USAGE["out"] += usage.output_tokens
-    m = USAGE["by_model"].setdefault(model, {"calls": 0, "in": 0, "out": 0})  # ty: ignore[unresolved-attribute]
+    m = USAGE["by_model"].setdefault(model, {"calls": 0, "in": 0, "out": 0})
     m["calls"] += 1
     m["in"] += usage.input_tokens
     m["out"] += usage.output_tokens
@@ -113,6 +114,22 @@ def run_agent(system: str, tools: list, query: str, on_step=None) -> dict:
         }
         if tools:
             kwargs["tools"] = tools
+
+        spent = cost.usd(USAGE["by_model"])
+        if MAX_USD and spent >= MAX_USD:  # ← вичерпано бюджет
+            return {
+                "answer": f"Зупиняюсь: прогін вичерпав ліміт вартості "
+                          f"${MAX_USD:.4f} (витрачено ${spent:.4f}) і залишився "
+                          f"незавершеним. Звузьте запит або підніміть ліміт.",
+                "outcome": "budget_exceeded",
+                "spent_usd": spent,
+                "limit_usd": MAX_USD,
+                "trace": trace,
+                "failures": failures,
+                "turns": turn,
+                "elapsed_sec": round(time.time() - started, 2),
+                "usage": {},
+            }
 
         try:
             resp = _call(**kwargs)
