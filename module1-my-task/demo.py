@@ -1,5 +1,5 @@
 """
-М1 — три демо-сцени заняття «Основи агентів».
+М1 — три демо-сцени: асистент бенчмарків SLAM/VIO.
 
     python demo.py        # всі
     python demo.py 2 3    # вибрані
@@ -14,7 +14,7 @@ from config import USER_QUERY
 from core import escalation
 from modules import m01_core
 
-TRAP_QUERY = "Яка зараз погода у Львові? І чи варто сьогодні йти на відділення?"
+TRAP_QUERY = "А яка взагалі типова ATE в ORB-SLAM3 на EuRoC? Чи варто переходити на DROID-SLAM?"
 
 
 def show(result: dict, query: str):
@@ -33,7 +33,7 @@ def show(result: dict, query: str):
 
 def scene_1():
     print("── Сцена 1. Чесна відмова: право лише подивитись ──────────────")
-    print("   CAPABILITIES[1] = ['get_order_status'] — повернення оформити нічим.\n")
+    print("   CAPABILITIES[1] = ['find_runs', 'get_metrics'] — переобрахунок замовити нічим.\n")
     show(m01_core.run(USER_QUERY), USER_QUERY)
 
 

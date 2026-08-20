@@ -1,223 +1,451 @@
 """
-Фейковий бекенд поштового оператора. Детермінований.
+Фейковий реєстр прогонів SLAM/VIO + логи. Детермінований.
 
-Кожне відправлення — окремий сценарій, щоб eval мав що перевіряти:
-  EE1 прострочене · EE2 втрачене · EE3 вручене · EE4 невірна адреса · EE5 у строку
+Зерно: один запис RUNS = одне виконання алгоритму на одному сиквенсі.
+Метрики й лог належать саме йому, тож жоден рівень каскаду не змішує масштаби.
+
+run_id навмисно непрозорий: сконструювати його «з голови» неможливо,
+його можна тільки отримати від search_logs або find_runs.
 """
 
-ORDERS = {
-    # прострочене — класичний кейс повернення вартості доставки
-    "EE123456789UA": {
-        "tracking": "EE123456789UA",
-        "recipient_phone": "+380671112233",
-        "status": "В дорозі",
-        "last_scan": "12.07.2026, сортувальний центр Київ",
-        "days_in_transit": 15,
-        "declared_delivery_days": 5,
-        "shipping_paid_uah": 120,
-        "declared_value_uah": 2400,
-        "service": "Експрес",
-        "recipient_city": "Львів",
-    },
-    # втрачене — повернення доставки + компенсація вкладення
-    "EE222333444UA": {
-        "tracking": "EE222333444UA",
-        "recipient_phone": "+380502223344",
-        "status": "Розшук",
-        "last_scan": "02.06.2026, митний пост Одеса",
-        "days_in_transit": 55,
-        "declared_delivery_days": 7,
-        "shipping_paid_uah": 180,
-        "declared_value_uah": 5000,
-        "service": "Міжнародний",
-        "recipient_city": "Дніпро",
-    },
-    # вручене вчасно — повернення не належить
-    "EE555666777UA": {
-        "tracking": "EE555666777UA",
-        "recipient_phone": "+380633334455",
-        "status": "Вручено",
-        "last_scan": "10.08.2026, відділення №7 Харків",
-        "days_in_transit": 4,
-        "declared_delivery_days": 5,
-        "shipping_paid_uah": 90,
-        "declared_value_uah": 800,
-        "service": "Стандарт",
-        "recipient_city": "Харків",
-    },
-    # невірна адреса — провина відправника, повернення не належить
-    "EE888999000UA": {
-        "tracking": "EE888999000UA",
-        "recipient_phone": "+380934445566",
-        "status": "Повернення відправнику",
-        "last_scan": "08.08.2026, відділення №3 Полтава",
-        "days_in_transit": 12,
-        "declared_delivery_days": 5,
-        "shipping_paid_uah": 110,
-        "declared_value_uah": 1500,
-        "service": "Стандарт",
-        "recipient_city": "Полтава",
-        "return_reason": "невірна адреса, вказана відправником",
-    },
-    # у межах строку — ще рано щось вимагати
-    "EE111222333UA": {
-        "tracking": "EE111222333UA",
-        "recipient_phone": "+380502223344",
-        "status": "В дорозі",
-        "last_scan": "15.08.2026, сортувальний центр Львів",
-        "days_in_transit": 3,
-        "declared_delivery_days": 5,
-        "shipping_paid_uah": 100,
-        "declared_value_uah": 1200,
-        "service": "Стандарт",
-        "recipient_city": "Ужгород",
-    },
+import pathlib
+import re
+
+LOG_DIR = pathlib.Path(__file__).resolve().parent.parent / "data" / "logs"
+
+
+def _run(rid, algo, cfg, commit, ds, seq, hw, date, gt, ate=None, lost=None):
+    return {
+        "run_id": rid,
+        "algorithm": algo,
+        "config": cfg,
+        "commit": commit,
+        "dataset": ds,
+        "sequence": seq,
+        "hardware": hw,
+        "date": date,
+        "ground_truth": gt,
+        "ate": ate,
+        "tracking_lost_at_sec": lost,
+    }
+
+
+_JETSON, _NUC, _GPU = "Jetson Orin Nano 8GB", "Intel NUC i7-1165G7", "RTX 4090"
+
+RUNS: dict[str, dict] = {
+    # ORB-SLAM3, stereo-inertial, EuRoC
+    "run-0141": _run(
+        "run-0141",
+        "ORB-SLAM3",
+        "stereo-inertial",
+        "a3f9c21",
+        "EuRoC MAV",
+        "MH_01_easy",
+        _JETSON,
+        "12.07.2026",
+        True,
+        {"ate_rmse_m": 0.041, "ate_mean_m": 0.036, "ate_max_m": 0.112},
+    ),
+    "run-0142": _run(
+        "run-0142",
+        "ORB-SLAM3",
+        "stereo-inertial",
+        "a3f9c21",
+        "EuRoC MAV",
+        "MH_04_difficult",
+        _JETSON,
+        "12.07.2026",
+        True,
+        {"ate_rmse_m": 0.089, "ate_mean_m": 0.074, "ate_max_m": 0.241},
+    ),
+    "run-0143": _run(
+        "run-0143",
+        "ORB-SLAM3",
+        "stereo-inertial",
+        "a3f9c21",
+        "EuRoC MAV",
+        "V2_03_difficult",
+        _JETSON,
+        "12.07.2026",
+        True,
+        {"ate_rmse_m": 0.157, "ate_mean_m": 0.131, "ate_max_m": 0.483},
+    ),
+    # ORB-SLAM3, stereo (без IMU), EuRoC — той самий коміт, інший конфіг
+    "run-0144": _run(
+        "run-0144",
+        "ORB-SLAM3",
+        "stereo",
+        "a3f9c21",
+        "EuRoC MAV",
+        "MH_01_easy",
+        _JETSON,
+        "12.07.2026",
+        True,
+        {"ate_rmse_m": 0.058, "ate_mean_m": 0.049, "ate_max_m": 0.161},
+    ),
+    "run-0145": _run(
+        "run-0145",
+        "ORB-SLAM3",
+        "stereo",
+        "a3f9c21",
+        "EuRoC MAV",
+        "MH_04_difficult",
+        _JETSON,
+        "12.07.2026",
+        True,
+        {"ate_rmse_m": 0.134, "ate_mean_m": 0.112, "ate_max_m": 0.377},
+    ),
+    "run-0146": _run(
+        "run-0146",
+        "ORB-SLAM3",
+        "stereo",
+        "a3f9c21",
+        "EuRoC MAV",
+        "V2_03_difficult",
+        _JETSON,
+        "12.07.2026",
+        True,
+        {"ate_rmse_m": 0.402, "ate_mean_m": 0.318, "ate_max_m": 1.114},
+    ),
+    # OpenVINS, EuRoC — на V2_03 зрив трекінгу, метрик немає
+    "run-0207": _run(
+        "run-0207",
+        "OpenVINS",
+        "stereo-inertial",
+        "7d1e004",
+        "EuRoC MAV",
+        "MH_01_easy",
+        _NUC,
+        "28.07.2026",
+        True,
+        {"ate_rmse_m": 0.052, "ate_mean_m": 0.044, "ate_max_m": 0.139},
+    ),
+    "run-0208": _run(
+        "run-0208",
+        "OpenVINS",
+        "stereo-inertial",
+        "7d1e004",
+        "EuRoC MAV",
+        "MH_04_difficult",
+        _NUC,
+        "28.07.2026",
+        True,
+        {"ate_rmse_m": 0.096, "ate_mean_m": 0.081, "ate_max_m": 0.268},
+    ),
+    "run-0209": _run(
+        "run-0209",
+        "OpenVINS",
+        "stereo-inertial",
+        "7d1e004",
+        "EuRoC MAV",
+        "V2_03_difficult",
+        _NUC,
+        "28.07.2026",
+        True,
+        None,
+        47.3,
+    ),
+    # OpenVINS, TUM-VI
+    "run-0231": _run(
+        "run-0231",
+        "OpenVINS",
+        "stereo-inertial",
+        "7d1e004",
+        "TUM-VI",
+        "room1",
+        _NUC,
+        "10.08.2026",
+        True,
+        {"ate_rmse_m": 0.071, "ate_mean_m": 0.061, "ate_max_m": 0.188},
+    ),
+    "run-0232": _run(
+        "run-0232",
+        "OpenVINS",
+        "stereo-inertial",
+        "7d1e004",
+        "TUM-VI",
+        "corridor4",
+        _NUC,
+        "10.08.2026",
+        True,
+        {"ate_rmse_m": 0.312, "ate_mean_m": 0.256, "ate_max_m": 0.904},
+    ),
+    # DROID-SLAM, власний датасет без ground truth — метрик не існує, лога немає
+    "run-0288": _run(
+        "run-0288",
+        "DROID-SLAM",
+        "monocular",
+        "b52f7ac",
+        "Warehouse-Internal",
+        "aisle_loop",
+        _GPU,
+        "03.08.2026",
+        False,
+    ),
 }
 
-_claims = {}
+_reruns: dict[str, dict] = {}
+
+_TRACK_RE = re.compile(
+    r"\[\s*([\d.]+)\] \[TRACK\] frame\s+(\d+)\s+feats\s+(\d+)\s+inliers\s+(\d+)"
+)
+
+_EVENTS = {
+    "tracking_lost": "track: LOST",
+    "low_features": "low feature count",
+    "loop_closure": "loop: closure",
+    "keyframe": "keyframe",
+}
 
 
-# ── інструменти ───────────────────────────────────────────────
-def _digits(phone: str | int) -> str:
-    """Last 9 digits of the phone number."""
-    return "".join(c for c in str(phone) if c.isdigit())[-9:]
+def _norm(s: str) -> str:
+    """orb-slam3, ORB SLAM 3, orbslam3 → orbslam3."""
+    return "".join(c for c in str(s).lower() if c.isalnum())
 
 
-def find_shipments(phone: str) -> dict:
-    """Find user's shipments by phone number."""
-    key = _digits(phone)
-    if len(key) < 9:
+def _lines(run_id: str) -> list[str] | dict:
+    if run_id.strip() not in RUNS:
         return {
-            "error": "bad_phone",
-            "phone": phone,
-            "hint": "Потрібен номер із 9 цифр після коду країни, напр. +380671112233.",
+            "error": "not_found",
+            "run_id": run_id,
+            "hint": "Такого run_id немає. Отримайте коректний через search_logs або find_runs.",
         }
+    path = LOG_DIR / f"{run_id.strip()}.log"
+    if not path.exists():
+        return {
+            "error": "log_not_found",
+            "run_id": run_id,
+            "hint": "Для цього прогону лога немає.",
+        }
+    return path.read_text(encoding="utf-8").splitlines()
+
+
+# ── рівень 1: сирі події ──────────────────────────────────────
+def search_logs(event: str, algorithm: str = "", dataset: str = "") -> dict:
+    """Шукає подію в логах УСІХ прогонів. Повертає лише координати, без метаданих і метрик."""
+    needle = _EVENTS.get(event.strip().lower())
+    if not needle:
+        return {
+            "error": "unknown_event",
+            "event": event,
+            "available_events": sorted(_EVENTS),
+            "hint": "Оберіть подію зі списку available_events.",
+        }
+    algo, ds = _norm(algorithm), _norm(dataset)
+    hits = []
+    for run_id, r in RUNS.items():
+        if algo and _norm(r["algorithm"]) != algo:
+            continue
+        if ds and _norm(r["dataset"]) != ds:
+            continue
+        lines = _lines(run_id)
+        if isinstance(lines, dict):
+            continue
+        matched = [ln for ln in lines if needle in ln]
+        if matched:
+            hits.append(
+                {
+                    "run_id": run_id,
+                    "sequence": r["sequence"],
+                    "count": len(matched),
+                    "first_at_sec": float(matched[0].split("]")[0].strip(" [")),
+                }
+            )
+    if not hits:
+        return {
+            "error": "no_matches",
+            "event": event,
+            "algorithm": algorithm or None,
+            "dataset": dataset or None,
+            "hint": "Такої події в логах за цими критеріями немає.",
+        }
+    return {"event": event, "count": len(hits), "hits": hits}
+
+
+def find_runs(algorithm: str, dataset: str = "", sequence: str = "") -> dict:
+    """Другий вхід: пошук прогонів за алгоритмом. Метрик не повертає."""
+    algo = _norm(algorithm)
+    if not algo:
+        return {
+            "error": "bad_algorithm",
+            "hint": "Вкажіть алгоритм: ORB-SLAM3, OpenVINS або DROID-SLAM.",
+        }
+    ds, seq = _norm(dataset), _norm(sequence)
     found = [
         {
-            "tracking": o["tracking"],
-            "service": o["service"],
-            "recipient_city": o["recipient_city"],
+            k: r[k]
+            for k in (
+                "run_id",
+                "algorithm",
+                "config",
+                "commit",
+                "dataset",
+                "sequence",
+                "date",
+            )
         }
-        for o in ORDERS.values()
-        if _digits(o.get("recipient_phone", "")) == key
+        for r in RUNS.values()
+        if _norm(r["algorithm"]) == algo
+        and (not ds or _norm(r["dataset"]) == ds)
+        and (not seq or _norm(r["sequence"]) == seq)
     ]
     if not found:
         return {
             "error": "not_found",
-            "phone": phone,
-            "hint": "За цим номером відправлень немає. Перевірте номер або спитайте відправника.",
+            "algorithm": algorithm,
+            "dataset": dataset or None,
+            "sequence": sequence or None,
+            "hint": "Прогонів за такими критеріями немає.",
         }
-    return {"count": len(found), "shipments": found}
+    return {"count": len(found), "runs": found}
 
 
-def get_order_status(tracking: str) -> dict:
-    o = ORDERS.get(tracking.strip().upper())
-    if not o:
+# ── рівень 2: сутність ────────────────────────────────────────
+def get_run(run_id: str) -> dict:
+    """Метадані одного виконання. Метрик не повертає."""
+    r = RUNS.get(run_id.strip())
+    if not r:
         return {
             "error": "not_found",
-            "tracking": tracking,
-            "hint": "Перевірте номер або уточніть у відправника.",
+            "run_id": run_id,
+            "hint": "Такого run_id немає. Отримайте коректний через search_logs або find_runs.",
         }
     return {
-        k: o[k]
+        k: r[k]
         for k in (
-            "tracking",
-            "status",
-            "last_scan",
-            "days_in_transit",
-            "declared_delivery_days",
-            "service",
-            "recipient_city",
+            "run_id",
+            "algorithm",
+            "config",
+            "commit",
+            "dataset",
+            "sequence",
+            "hardware",
+            "date",
+            "ground_truth",
         )
     }
 
 
-def check_refund_eligibility(tracking: str) -> dict:
-    o = ORDERS.get(tracking.strip().upper())
-    if not o:
-        return {"error": "not_found", "tracking": tracking}
-
-    overdue = o["days_in_transit"] - o["declared_delivery_days"]  # ty: ignore[unsupported-operator]
-
-    if o["status"] == "Повернення відправнику":
+# ── рівень 3: міри ────────────────────────────────────────────
+def get_metrics(run_id: str) -> dict:
+    """ATE одного виконання, у метрах."""
+    r = RUNS.get(run_id.strip())
+    if not r:
         return {
-            "eligible": False,
-            "reason": "return_sender",
-            "rule": "Правило 4.7. Якщо відправлення повернуто через невірну адресу, "
-            "вказану відправником, вартість доставки не повертається.",
-            "details": o.get("return_reason"),
+            "error": "not_found",
+            "run_id": run_id,
+            "hint": "Такого run_id немає. Отримайте коректний через search_logs або find_runs.",
         }
-
-    if o["status"] == "Вручено" and overdue < 5:
+    if not r["ground_truth"]:
         return {
-            "eligible": False,
-            "reason": "delivered_on_time",
-            "overdue_days": overdue,
-            "rule": "Правило 4.2. Повернення — лише при простроченні від 5 днів.",
+            "error": "no_ground_truth",
+            "run_id": r["run_id"],
+            "dataset": r["dataset"],
+            "hint": "Для цього датасету немає ground truth — ATE порахувати нічим.",
         }
-
-    if overdue < 5:
+    if r["ate"] is None:
         return {
-            "eligible": False,
-            "reason": "within_term",
-            "overdue_days": max(overdue, 0),
-            "days_left": max(o["declared_delivery_days"] - o["days_in_transit"], 0),  # ty: ignore[unsupported-operator]
-            "rule": "Правило 4.2. Строк доставки ще не вичерпано.",
+            "error": "metrics_unavailable",
+            "run_id": r["run_id"],
+            "reason": "tracking_lost",
+            "tracking_lost_at_sec": r["tracking_lost_at_sec"],
+            "hint": "Трекінг зірвано, траєкторія неповна — ATE не рахувалась.",
         }
-
     return {
-        "eligible": True,
-        "overdue_days": overdue,
-        "refundable_amount_uah": o["shipping_paid_uah"],
-        "rule": "Правило 4.2. Прострочення від 5 днів — повертається вартість доставки. "
-        "Вартість вкладення не повертається.",
+        "run_id": r["run_id"],
+        "sequence": r["sequence"],
+        "units": "метри",
+        **r["ate"],
     }
 
 
-def check_compensation(tracking: str) -> dict:
-    """Компенсація за вкладення — лише для втрачених після розшуку."""
-    o = ORDERS.get(tracking.strip().upper())
-    if not o:
-        return {"error": "not_found", "tracking": tracking}
-    if o["status"] != "Розшук":
+def scan_log(run_id: str, frame_from: int = -1, frame_to: int = -1) -> dict:
+    """Агрегує лог одного виконання по діапазону кадрів. Рахує КОД, не модель."""
+    lines = _lines(run_id)
+    if isinstance(lines, dict):
+        return lines
+    lo = max(frame_from, 0)
+    hi = 10**9 if frame_to < 0 else frame_to
+    if lo > hi:
         return {
-            "eligible": False,
-            "reason": "not_lost",
-            "rule": "Правило 7.3. Компенсація за вкладення — лише після розшуку.",
+            "error": "bad_range",
+            "frame_from": frame_from,
+            "frame_to": frame_to,
+            "hint": "frame_from має бути не більший за frame_to.",
         }
-    return {
-        "eligible": True,
-        "max_amount_uah": o["declared_value_uah"],
-        "rule": "Правило 7.3. Компенсація в межах оголошеної цінності "
-        "після завершення розшуку.",
+
+    feats, frames, last_t = [], [], 0.0
+    for ln in lines:
+        m = _TRACK_RE.search(ln)
+        if m and lo <= int(m.group(2)) <= hi:
+            last_t = float(m.group(1))
+            frames.append(int(m.group(2)))
+            feats.append(int(m.group(3)))
+
+    lost = next((ln for ln in lines if "track: LOST" in ln), None)
+    out = {
+        "run_id": run_id.strip(),
+        "range": {
+            "frame_from": lo,
+            "frame_to": (frames[-1] if frames else None) if hi > 10**8 else hi,
+        },
+        "frames_seen": len(frames),
+        "events": {
+            "keyframes": sum("keyframe" in ln for ln in lines),
+            "loop_closures": sum("loop: closure" in ln for ln in lines),
+            "low_feature_warnings": sum("low feature count" in ln for ln in lines),
+        },
+        "tracking_lost": bool(lost),
     }
+    if lost:
+        out["tracking_lost_at_sec"] = float(lost.split("]")[0].strip(" ["))
+    if not frames:
+        out["note"] = "У цьому діапазоні кадрів TRACK-рядків немає."
+        return out
+    out["features"] = {
+        "min": min(feats),
+        "max": max(feats),
+        "mean": round(sum(feats) / len(feats), 1),
+    }
+    out["last_frame_time_sec"] = last_t
+    return out
 
 
-def create_claim(tracking: str, reason: str) -> dict:
-    if tracking.strip().upper() not in ORDERS:
-        return {"error": "not_found", "tracking": tracking}
-    cid = f"CLM-{len(_claims) + 1:05d}"
-    _claims[cid] = {"tracking": tracking, "reason": reason, "status": "Прийнято"}
-    return {"claim_id": cid, "status": "Прийнято", "sla_days": 10}
+def read_log(run_id: str, limit: int = 200) -> dict:
+    """Сирі рядки лога. Рахувати доводиться моделі — «до» для челенджа A."""
+    lines = _lines(run_id)
+    if isinstance(lines, dict):
+        return lines
+    return {"run_id": run_id.strip(), "total_lines": len(lines), "lines": lines[:limit]}
 
 
-def escalate_to_human(tracking: str, reason: str) -> dict:
-    """Передати звернення оператору. Викликається, коли агент не може закрити сам."""
+def request_rerun(run_id: str, reason: str) -> dict:
+    """Поставити виконання в чергу на переобрахунок. З модуля 4 — право діяти."""
+    if run_id.strip() not in RUNS:
+        return {"error": "not_found", "run_id": run_id}
+    rid = f"RERUN-{len(_reruns) + 1:05d}"
+    _reruns[rid] = {"run_id": run_id, "reason": reason, "status": "У черзі"}
+    return {"rerun_id": rid, "status": "У черзі", "eta_hours": 6}
+
+
+def escalate_to_human(ref: str, reason: str) -> dict:
+    """Передати питання інженеру."""
     return {
         "escalated": True,
-        "queue": "support-l2",
-        "ticket": f"ESC-{abs(hash(tracking)) % 90000 + 10000}",
+        "ticket": f"ENG-{abs(hash(ref)) % 10000:04d}",
+        "ref": ref,
         "reason": reason,
-        "eta_minutes": 15,
     }
 
 
 IMPL = {
-    "find_shipments": find_shipments,
-    "get_order_status": get_order_status,
-    "check_refund_eligibility": check_refund_eligibility,
-    "check_compensation": check_compensation,
-    "create_claim": create_claim,
+    "get_run": get_run,
+    "find_runs": find_runs,
+    "get_metrics": get_metrics,
+    "search_logs": search_logs,
+    "scan_log": scan_log,
+    "read_log": read_log,
+    "request_rerun": request_rerun,
     "escalate_to_human": escalate_to_human,
 }
 
@@ -232,7 +460,6 @@ def dispatch(name: str, args: dict) -> dict:
         return {"error": f"bad_args: {e}"}
 
 
-# ── схеми ─────────────────────────────────────────────────────
 def _schema(name, desc, props, required):
     return {
         "name": name,
@@ -241,76 +468,130 @@ def _schema(name, desc, props, required):
     }
 
 
-_TRACK = {
-    "tracking": {"type": "string", "description": "Трек-номер, напр. EE123456789UA"}
-}
-
-_PHONE = {
-    "phone": {
-        "type": "string",
-        "description": "Телефон отримувача як його надав клієнт, "
-        "напр. +380671112233 або 0671112233. Передавай як є, "
-        "формат нормалізує бекенд.",
-    }
+_RUN_ID = {
+    "type": "string",
+    "description": "Непрозорий ідентифікатор виконання, "
+    "напр. run-0141. Отримується від search_logs або find_runs — "
+    "конструювати або вгадувати його не можна.",
 }
 
 TOOL_SCHEMAS = {
-    "find_shipments": _schema(
-        "find_shipments",
-        "Знаходить відправлення за номером телефону отримувача. "
-        "Повертає ЛИШЕ трек-номери, без статусу. "
-        "Щоб дізнатись стан відправлення, виклич далі get_order_status "
-        "з трек-номером, отриманим тут.",
-        _PHONE,
-        ["phone"],
+    "search_logs": _schema(
+        "search_logs",
+        "РІВЕНЬ 1 каскаду — сирі події. Шукає подію в логах усіх виконань і повертає, "
+        "де вона трапилась: run_id, сиквенс, скільки разів, на якій секунді вперше. "
+        "Метаданих і метрик НЕ повертає — по них далі get_run і get_metrics. "
+        "Використовуй, коли питання починається з події («де зривався трекінг?»).",
+        {
+            "event": {
+                "type": "string",
+                "description": "tracking_lost, low_features, loop_closure або keyframe",
+            },
+            "algorithm": {
+                "type": "string",
+                "description": "Необовʼязковий фільтр за алгоритмом",
+            },
+            "dataset": {
+                "type": "string",
+                "description": "Необовʼязковий фільтр за датасетом",
+            },
+        },
+        ["event"],
     ),
-    "get_order_status": _schema(
-        "get_order_status",
-        "Повертає статус відправлення за трек-номером.",
-        _TRACK,
-        ["tracking"],
+    "find_runs": _schema(
+        "find_runs",
+        "Другий вхід у каскад — пошук виконань за алгоритмом і, за бажанням, датасетом "
+        "чи сиквенсом. Одне виконання = один алгоритм на одному сиквенсі, тож один "
+        "алгоритм на датасеті дає кілька run_id. Повертає ЛИШЕ ідентифікатори й "
+        "метадані, БЕЗ метрик.",
+        {
+            "algorithm": {
+                "type": "string",
+                "description": "Назва алгоритму як її вказав користувач, напр. "
+                "ORB-SLAM3, OpenVINS, DROID-SLAM. Передавай як є — "
+                "регістр і дефіси нормалізує бекенд.",
+            },
+            "dataset": {
+                "type": "string",
+                "description": "Необовʼязково: EuRoC MAV, TUM-VI",
+            },
+            "sequence": {
+                "type": "string",
+                "description": "Необовʼязково: MH_01_easy, V2_03_difficult, room1",
+            },
+        },
+        ["algorithm"],
     ),
-    "check_refund_eligibility": _schema(
-        "check_refund_eligibility",
-        "Перевіряє право на повернення ВАРТОСТІ ДОСТАВКИ.",
-        _TRACK,
-        ["tracking"],
+    "get_run": _schema(
+        "get_run",
+        "РІВЕНЬ 2 каскаду — сутність. Метадані одного виконання: алгоритм, конфіг, коміт, "
+        "датасет, сиквенс, залізо, дата, чи є ground truth. Метрик НЕ повертає.",
+        {"run_id": _RUN_ID},
+        ["run_id"],
     ),
-    "check_compensation": _schema(
-        "check_compensation",
-        "Перевіряє право на компенсацію за ВКЛАДЕННЯ (лише для втрачених).",
-        _TRACK,
-        ["tracking"],
+    "get_metrics": _schema(
+        "get_metrics",
+        "РІВЕНЬ 3 каскаду — міри. ATE одного виконання: rmse, mean, max у метрах. "
+        "Якщо немає ground truth або зірвано трекінг — повертає помилку: метрик "
+        "не існує, вигадувати їх не можна.",
+        {"run_id": _RUN_ID},
+        ["run_id"],
     ),
-    "create_claim": _schema(
-        "create_claim",
-        "Створює претензію і повертає її номер.",
-        {**_TRACK, "reason": {"type": "string", "description": "Причина звернення"}},
-        ["tracking", "reason"],
+    "scan_log": _schema(
+        "scan_log",
+        "Агрегує лог одного виконання по діапазону кадрів: скільки кадрів відстежено, "
+        "мінімум/середнє/максимум фіч, кейфрейми, замикання циклу, попередження, "
+        "чи був зрив трекінгу і на якій секунді. "
+        "ПІДРАХУНОК РОБИТЬ БЕКЕНД — не рахуй нічого самостійно і не оцінюй «на око».",
+        {
+            "run_id": _RUN_ID,
+            "frame_from": {
+                "type": "integer",
+                "description": "Початок діапазону кадрів. -1 або пропуск — від початку",
+            },
+            "frame_to": {
+                "type": "integer",
+                "description": "Кінець діапазону кадрів. -1 або пропуск — до кінця",
+            },
+        },
+        ["run_id"],
+    ),
+    "read_log": _schema(
+        "read_log",
+        "Повертає сирі рядки лога виконання.",
+        {
+            "run_id": _RUN_ID,
+            "limit": {"type": "integer", "description": "Скільки рядків повернути"},
+        },
+        ["run_id"],
+    ),
+    "request_rerun": _schema(
+        "request_rerun",
+        "Ставить виконання в чергу на переобрахунок.",
+        {
+            "run_id": _RUN_ID,
+            "reason": {"type": "string", "description": "Причина переобрахунку"},
+        },
+        ["run_id", "reason"],
     ),
     "escalate_to_human": _schema(
         "escalate_to_human",
-        "Передає звернення оператору. Використовуй, якщо не можеш вирішити сам "
-        "або клієнт прямо просить людину.",
-        {**_TRACK, "reason": {"type": "string", "description": "Чому потрібна людина"}},
-        ["tracking", "reason"],
+        "Передає питання інженеру. Використовуй, якщо не можеш вирішити сам "
+        "або користувач прямо просить людину.",
+        {
+            "ref": {"type": "string", "description": "run_id або назва алгоритму"},
+            "reason": {"type": "string", "description": "Чому потрібна людина"},
+        },
+        ["ref", "reason"],
     ),
 }
 
-BASIC = ["find_shipments", "get_order_status"]
-FULL = [
-    "find_shipments",
-    "get_order_status",
-    "check_refund_eligibility",
-    "check_compensation",
-    "create_claim",
-    "escalate_to_human",
-]
+BASIC = ["search_logs", "find_runs", "get_run", "get_metrics", "scan_log"]
+READ = BASIC
+# «до» для челенджа A: сирі рядки замість агрегації
+RAW_LOG = ["search_logs", "find_runs", "get_run", "get_metrics", "read_log"]
+FULL = [*BASIC, "request_rerun", "escalate_to_human"]
 
-READ = ["find_shipments", "get_order_status", "check_refund_eligibility"]
-
-# 1–2: тільки подивитись · 3: дізнатись право (фреймворк, ще без дій)
-# 4+: право діяти — з оркестрації з'являється create_claim
 CAPABILITIES = {
     1: BASIC,
     2: BASIC,
