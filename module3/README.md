@@ -13,6 +13,9 @@
   у `out/checkpoint.json`. Все — 50 рядків: фреймворк це не магія.
 - `run_langgraph.py` — ті самі стани як вузли графа, checkpointer з
   коробки, `--pause` = interrupt після DECIDE + resume (готовий HITL).
+- `run_agent_sdk.py` — той самий агент на Claude Agent SDK: свої
+  інструменти як in-process MCP, hook блокує Bash кодом, чесна відмова
+  на невідомому треку. Порівняйте вартість зі стеком B.
 - `run_create_agent.py` — фішки langchain 1.x: `create_agent`, `@tool`
   (type hints = схема, docstring = опис), middleware. Наш MAX_TURNS з М1
   виявляється штатним `ModelCallLimitMiddleware`.
@@ -43,6 +46,7 @@ python run.py 3                  # руками: стани + чекпоінт (
 python run_langgraph.py          # стек A: стани як вузли графа
 python run_langgraph.py --pause  # пауза після DECIDE + resume (HITL)
 python run_create_agent.py       # стек B: create_agent + middleware
+python run_agent_sdk.py          # стек C: Claude Agent SDK — три сцени зі слайдів
 ```
 
 Порівнюйте чесно: рядки коду · що видно в стектрейсі · що робити при

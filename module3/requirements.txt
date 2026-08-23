@@ -7,3 +7,4 @@ qdrant-client>=1.12        # векторна БД: вбудований :memory
 # фреймворки:
 langchain>=1.3
 langgraph>=1.2
+claude-agent-sdk>=0.2       # третій стек: python run_agent_sdk.py
