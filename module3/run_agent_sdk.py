@@ -7,7 +7,8 @@
 
 Три сцени зі слайдів розділу Claude Agent SDK:
   1. ланцюжок інструментів — статус → право на повернення → відповідь;
-  2. hook блокує Bash ДО виконання: це код, а не прохання в промпті;
+  2. hook як бізнес-політика: повернення понад ліміт — лише через
+     оператора; deny спрацьовує ДО виконання, це код, а не промпт;
   3. невідомий трек — агент чесно відмовляє, нічого не вигадує.
 
     pip install claude-agent-sdk       # Python 3.10+, Node не потрібен
@@ -47,18 +48,32 @@ async def check_refund(args):
                          "text": str(backend.check_refund_eligibility(args["tracking"]))}]}
 
 
+@tool("create_refund", "Оформити повернення коштів клієнту",
+      {"tracking": str, "amount_uah": int})
+async def create_refund(args):
+    return {"content": [{"type": "text",
+        "text": f"{{'refund_id': 'RF-0001', 'amount_uah': {args['amount_uah']}, "
+                f"'status': 'оформлено'}}"}]}
+
+
 server = create_sdk_mcp_server(name="post", version="1.0.0",
-                               tools=[get_order_status, check_refund])
+                               tools=[get_order_status, check_refund,
+                                      create_refund])
+
+LIMIT_UAH = 1000                     # понад — лише через оператора
 
 
-# ── hook: команди оболонки заборонені політикою, кодом ────────
-async def deny_bash(input_data, tool_use_id, context):
-    if input_data.get("tool_name") == "Bash":
-        cmd = input_data.get("tool_input", {}).get("command", "")
-        print(f"  [hook] deny Bash: {cmd!r}")
+# ── hook: бізнес-політика кодом, а не проханням у промпті ─────
+async def refund_policy(input_data, tool_use_id, context):
+    amount = input_data.get("tool_input", {}).get("amount_uah", 0)
+    verdict = "deny" if amount > LIMIT_UAH else "allow"
+    print(f"  [hook] create_refund({amount} грн) → {verdict}")
+    if amount > LIMIT_UAH:
         return {"hookSpecificOutput": {"hookEventName": "PreToolUse",
                 "permissionDecision": "deny",
-                "permissionDecisionReason": "Bash заборонено політикою підтримки"}}
+                "permissionDecisionReason":
+                    f"{amount} грн понад ліміт {LIMIT_UAH}: "
+                    "потрібне підтвердження оператора"}}
     return {}
 
 
@@ -90,12 +105,18 @@ async def main() -> None:
                   allowed_tools=["mcp__post__get_order_status",
                                  "mcp__post__check_refund"]))
 
-    await run("Сцена 2 · hook блокує Bash",
-              "Виконай команду `ls /` і скажи, що там є.",
-              ClaudeAgentOptions(**base,
-                  allowed_tools=["Bash"],
-                  hooks={"PreToolUse": [HookMatcher(matcher="Bash",
-                                                    hooks=[deny_bash])]}))
+    scene2 = dict(base, system_prompt=(
+        "Ти — виконавчий шар бек-офісу. Рішення вже ухвалене людиною вище: "
+        "виклич create_refund окремо на КОЖНУ суму із запиту, без власних "
+        "перевірок — контроль лімітів робить система, не ти. Українською."))
+    await run("Сцена 2 · hook: ліміт на повернення",
+              "Погоджені повернення по EE123456789UA: 120 грн і 5000 грн. "
+              "Оформи обидва.",
+              ClaudeAgentOptions(**scene2,
+                  allowed_tools=["mcp__post__create_refund"],
+                  hooks={"PreToolUse": [HookMatcher(
+                      matcher="mcp__post__create_refund",
+                      hooks=[refund_policy])]}))
 
     await run("Сцена 3 · невідомий трек",
               "Де посилка XX000000000XX?",
@@ -103,7 +124,8 @@ async def main() -> None:
                   allowed_tools=["mcp__post__get_order_status",
                                  "mcp__post__check_refund"]))
 
-    print("\nПуант: цикл, дозволи і сесії ви не писали — лише інструменти й політику.")
+    print("\nПуант сцени 2: 120 грн пройшло без людини, 5000 — зупинив hook, КОДОМ.")
+    print("Цикл, дозволи і сесії ви не писали — лише інструменти й політику.")
     print("Ціна зручності: harness щоразу їде в контекст. Порівняйте вартість зі")
     print("run_create_agent.py — і вирішіть, що з цього потрібно вашій задачі.")
 
