@@ -50,13 +50,16 @@ def _call(**kwargs):
             raise
 
 
-def ask(system: str, user: str, max_tokens: int = 400, fast: bool = True,
-        temperature: float = 0.0) -> str:
+def ask(system: str, user: str, max_tokens: int = 400, fast: bool = True) -> str:
     """Допоміжний виклик без інструментів — роутер, guardrail, judge.
-    За замовчуванням дешева модель і temperature=0: класифікація та оцінка
-    мають бути детермінованими, інакше судді «хитають» eval-гейт."""
+
+    За замовчуванням дешева модель. Параметра temperature тут немає: у
+    anthropic 1.x його прибрано з messages.create, а на моделях 4.7+ API
+    відхиляє його й на рівні запиту. Детермінізм класифікації тепер
+    забезпечується промптом (жорсткий формат відповіді), а не семплінгом —
+    втім, temperature=0 ідентичних відповідей і раніше не гарантувала.
+    """
     resp = _call(model=MODEL_FAST if fast else MODEL, max_tokens=max_tokens,
-                 temperature=temperature,
                  system=system, messages=[{"role": "user", "content": user}])
     return "".join(b.text for b in resp.content if b.type == "text").strip()
 

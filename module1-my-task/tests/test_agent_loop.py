@@ -1,7 +1,8 @@
 """Логіка agent loop із підміненою моделлю. Мережі немає в жодному тесті."""
 
+from unittest.mock import Mock
+
 import anthropic
-import httpx
 import pytest
 from conftest import response, text_block, tool_block
 
@@ -66,9 +67,12 @@ def test_turns_exhausted_gives_a_defined_answer(fake_model, monkeypatch):
 
 
 def _api_error(status: int) -> anthropic.APIStatusError:
-    """Справжній виняток SDK — щоб перевіряти ту саму гілку, що й у проді."""
-    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
-    resp = httpx.Response(status, request=request)
+    """Справжній виняток SDK — щоб перевіряти ту саму гілку, що й у проді.
+
+    HTTP-клієнт не імпортуємо: anthropic 0.x тягне httpx, 1.x — httpx2,
+    а тесту потрібні лише .status_code, .request і .headers.
+    """
+    resp = Mock(status_code=status, request=Mock(), headers={})
     cls = anthropic.NotFoundError if status == 404 else anthropic.APIStatusError
     return cls("boom", response=resp, body=None)
 
