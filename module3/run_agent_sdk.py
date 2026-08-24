@@ -100,7 +100,9 @@ async def main() -> None:
         max_turns=6,                 # наш MAX_TURNS з М1 — одне поле
     )
 
-    await run("Сцена 1 · ланцюжок інструментів", USER_QUERY,
+    await run("Сцена 1 · ланцюжок інструментів",
+              "Де посилка EE123456789UA і чи належить мені повернення "
+              "за прострочення?",
               ClaudeAgentOptions(**base,
                   allowed_tools=["mcp__post__get_order_status",
                                  "mcp__post__check_refund"]))

@@ -107,7 +107,7 @@ def main():
 
     print("\n" + "─" * 70)
     print(f"Збережено: {RESULTS}")
-    print("Далі: python build_schema.py")
+    print("Далі: команди практики модуля — у README")
 
 
 if __name__ == "__main__":
