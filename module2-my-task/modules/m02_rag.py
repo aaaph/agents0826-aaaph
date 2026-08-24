@@ -19,7 +19,7 @@
 from config import BASE_PROMPT
 from core.agent import run_agent
 from domain.backend import tools_for
-from domain.knowledge import as_context, retrieve
+from domain.knowledge_vec import as_context, retrieve
 from modules.m01_core import finish
 
 TITLE = "Шар знань (RAG)"
