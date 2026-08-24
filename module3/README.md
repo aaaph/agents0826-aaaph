@@ -13,6 +13,12 @@
   у `out/checkpoint.json`. Все — 50 рядків: фреймворк це не магія.
 - `run_langgraph.py` — ті самі стани як вузли графа, checkpointer з
   коробки, `--pause` = interrupt після DECIDE + resume (готовий HITL).
+- `run_adk.py` — той самий агент на Google ADK 2.0: інструменти-функції,
+  callback-ліміт (аналог hooks), sub_agents із transfer_to_agent. Моделі —
+  Claude через LiteLLM, щоб не заводити другий ключ.
+- `run_agent_sdk.py` — той самий агент на Claude Agent SDK: свої
+  інструменти як in-process MCP, hook блокує Bash кодом, чесна відмова
+  на невідомому треку. Порівняйте вартість зі стеком B.
 - `run_create_agent.py` — фішки langchain 1.x: `create_agent`, `@tool`
   (type hints = схема, docstring = опис), middleware. Наш MAX_TURNS з М1
   виявляється штатним `ModelCallLimitMiddleware`.
@@ -36,7 +42,24 @@ python run_create_agent.py          # create_agent + middleware
 - Deprecated-мінне поле LangChain: AgentExecutor / LLMChain /
   ConversationBufferMemory ще живі у старих туторіалах — не вчіть мертві API.
 
-Лабораторна (з колоди): перенести свого агента з модуля 1 на другий стек.
+## Практика заняття: один агент — два стеки
+
+```bash
+python run.py 3                  # руками: стани + чекпоінт (50 рядків)
+python run_langgraph.py          # стек A: стани як вузли графа
+python run_langgraph.py --pause  # пауза після DECIDE + resume (HITL)
+python run_create_agent.py       # стек B: create_agent + middleware
+python run_agent_sdk.py          # стек C: Claude Agent SDK — три сцени зі слайдів
+python run_adk.py                # стек D: Google ADK 2.0 (потрібен google-adk[extensions])
+```
+
+Порівнюйте чесно: рядки коду · що видно в стектрейсі · що робити при
+падінні посеред діалогу · вартість.
+
+**Лабораторна (з колоди):** перенесіть свого агента з модуля 1 на
+**третій** стек — CrewAI, Claude Agent SDK або Google ADK. Здати:
+посилання на репо + п'ять рядків «що виявилось простішим, а що
+складнішим, ніж очікували».
 
 **Далі (модуль 4):** три заняття поспіль ми відмовляємо клієнту.
 Час дати агенту право діяти.

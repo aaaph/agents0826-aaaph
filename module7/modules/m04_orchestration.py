@@ -7,6 +7,10 @@
 Саме тут та сама фраза користувача вперше доводиться до результату.
 """
 
+if __name__ == "__main__":            # прямий запуск: корінь модуля у sys.path
+    import sys, pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 from core.agent import run_agent, ask
 from core import escalation
 from domain.backend import tools_for
@@ -56,3 +60,16 @@ def _tracking(query: str) -> str:
     import re
     m = re.search(r"[A-Z]{2}\d{9}[A-Z]{2}", query.upper())
     return m.group(0) if m else "—"
+
+
+if __name__ == "__main__":
+    # те саме, що `python run.py 4`, лише без підсумкових метрик і вартості
+    from config import USER_QUERY
+
+    print(f"[{TITLE}] додає: {ADDS}\n")
+    _r = run(USER_QUERY)
+    _tools = [t["tool"] for t in _r.get("trace", [])]
+    if _tools:
+        print("інструменти:", " → ".join(_tools))
+    print("\n" + _r["answer"])
+    print("\nПовний прогін з метриками і вартістю:  python run.py 4")
