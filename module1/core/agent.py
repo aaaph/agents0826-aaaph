@@ -57,15 +57,14 @@ def ask(
     user: str,
     max_tokens: int = 400,
     fast: bool = True,
-    temperature: float = 0.0,
 ) -> str:
     """Допоміжний виклик без інструментів — роутер, guardrail, judge.
-    За замовчуванням дешева модель і temperature=0: класифікація та оцінка
-    мають бути детермінованими, інакше судді «хитають» eval-гейт."""
+    За замовчуванням дешева модель. Параметра temperature немає: у anthropic 1.x
+    його прибрано з messages.create. Детермінізм класифікації забезпечується
+    промптом, а не семплінгом."""
     resp = _call(
         model=MODEL_FAST if fast else MODEL,
         max_tokens=max_tokens,
-        temperature=temperature,
         system=system,
         messages=[{"role": "user", "content": user}],
     )
