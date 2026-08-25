@@ -1,0 +1,21 @@
+# Secrets — NEVER commit
+.env
+deploy/.env
+**/.env
+**/settings.local.json
+*secret*
+*.secret
+glpat-*
+credentials.json
+*.pem
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local model cache (each dev downloads e5-small locally)
+.cache/
+models/

@@ -1,0 +1,42 @@
+# CI for claude-platform. Two gates: no secrets, valid shared config.
+# Copy the `openspec-validate` job into each CODE-repo's CI to gate behaviour changes.
+stages: [check]
+
+secret-scan:
+  stage: check
+  image: zricethezav/gitleaks:latest
+  script:
+    - gitleaks detect --source . --no-banner --redact -v
+  allow_failure: false
+
+config-lint:
+  stage: check
+  image: python:3.11-slim
+  script:
+    - pip install -q pyyaml
+    - |
+      python - <<'PY'
+      import glob, re, yaml, sys
+      bad = 0
+      for p in glob.glob("shared/.claude/rules/*.md") + glob.glob("shared/.claude/agents/*.md"):
+          t = open(p).read()
+          m = re.match(r"^---\n(.*?)\n---\n", t, re.S)
+          if not m:
+              print("NO frontmatter:", p); bad += 1; continue
+          try:
+              d = yaml.safe_load(m.group(1))
+          except Exception as e:
+              print("YAML error:", p, e); bad += 1; continue
+          if "rules/" in p and not (d.get("description") and isinstance(d.get("paths"), list)):
+              print("rule missing description/paths:", p); bad += 1
+          if "agents/" in p and not (d.get("name") and d.get("description")):
+              print("agent missing name/description:", p); bad += 1
+      sys.exit(1 if bad else 0)
+      PY
+
+# --- copy into each code-repo's .gitlab-ci.yml ---
+# openspec-validate:
+#   stage: check
+#   image: node:20-slim
+#   script:
+#     - npx -y openspec validate --strict

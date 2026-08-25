@@ -36,6 +36,29 @@ python run.py
 | `module7/` | Observability + Evaluation | eval-датасет + гейт | тиха деградація: скор падає, логи чисті |
 | `module8/` | Продакшн, деплой, AIOps | FastAPI + Docker + SLO + стрімінг | та сама логіка — інший спосіб запуску |
 
+## Бонус: `addon_sdd/` — командний сетап
+
+Окремий матеріал, **не крок прогресії**. Модулі 1–8 показують, як збудувати
+агента; `addon_sdd/` — як зробити з Claude Code **командну платформу**:
+спільна пам'ять, єдиний конфіг у git, spec-driven процес.
+
+| Що всередині | Навіщо |
+|---|---|
+| `memory-hooks/` | гібридний RAG на Neo4j (вектор + fulltext, RRF) — пам'ять переживає сесії й спільна для команди |
+| `shared/.claude/` | baseline: rules, субагент `memory-query`, команди `/openspec:*` і `/verify-setup` |
+| `deploy/` | Neo4j у Docker, крос-платформений `bootstrap.py` (Win/mac/Linux), health-check |
+| `docs/` | SDD-процес (OpenSpec) і гайд онбордингу |
+
+Витягнуто з робочого продакшн-сетапу: усі дані компанії замінено на
+плейсхолдери, секретів немає. Повна інструкція — `addon_sdd/README.md`.
+
+```bash
+cd addon_sdd
+# замінити <NEO4J_HOST>, <GITLAB_HOST> та ін. — список у README
+cd deploy && cp .env.example .env && ./deploy.sh   # спільний Neo4j на хост
+python deploy/bootstrap.py                          # онбординг розробника
+```
+
 ## Головний важіль
 
 `CAPABILITIES` у `domain/backend.py`: на модулях 1–2 агент може тільки

@@ -1,0 +1,14 @@
+[project]
+name = "agent-memory-hooks-neo4j"
+version = "0.2.0"
+requires-python = ">=3.11"
+dependencies = [
+    "neo4j>=5.0",
+]
+
+[project.optional-dependencies]
+# Local multilingual embeddings for semantic memory search (offline).
+# Install with: uv sync --extra embeddings
+embeddings = [
+    "sentence-transformers>=3.0",
+]

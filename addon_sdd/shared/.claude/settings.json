@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "TEAM BASELINE — merged into each developer's ~/.claude/settings.json by deploy/bootstrap.py. Contains NO secrets: HOOKS_NEO4J_* are written per-machine by bootstrap. {{MEMORY_HOOKS}} is substituted with the absolute path of this repo's memory-hooks/ at bootstrap time.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "{{MEMORY_HOOKS}}/hooks-wrappers/log_event.sh" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "{{MEMORY_HOOKS}}/hooks-wrappers/log_event.sh" },
+          { "type": "command", "command": "{{MEMORY_HOOKS}}/hooks-wrappers/auto_inject_memory.sh", "timeout": 30 }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true
+  }
+}
